@@ -1,30 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-slate-950 text-white p-6 flex items-center justify-center min-h-screen">
-    <div class="max-w-md w-full bg-slate-900 p-8 rounded-2xl border border-emerald-500/30">
-        <h2 class="text-emerald-500 font-bold text-xs uppercase mb-4">Help a Brother First</h2>
-        <div id="burdenDisplay" class="italic text-lg mb-6 text-slate-300">"Loading..."</div>
-        <textarea id="reply" class="w-full bg-slate-800 p-4 rounded mb-4 outline-none focus:ring-1 focus:ring-emerald-500" placeholder="Give strength (min 10 chars)"></textarea>
-        <button id="unlockBtn" class="w-full bg-emerald-600 py-3 rounded font-bold">Unlock Community</button>
+<body class="bg-[#020617] text-white p-6 flex items-center justify-center min-h-screen">
+    <div class="max-w-md w-full bg-slate-900 p-10 rounded-3xl border border-emerald-500/30 shadow-2xl">
+        <h2 class="text-emerald-500 font-bold uppercase tracking-widest text-xs mb-2">Requirement: Give Strength</h2>
+        <div id="burdenDisplay" class="bg-slate-800/50 p-6 rounded-2xl italic text-slate-200 text-lg mb-8 border-l-4 border-emerald-500">
+            "Loading a brother's burden..."
+        </div>
+        <textarea id="reply" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 mb-4 outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Type a word of strength (Min 10 chars)..."></textarea>
+        <button id="unlockBtn" class="w-full bg-emerald-600 py-4 rounded-xl font-bold hover:bg-emerald-500 transition-colors">Unlock Dashboard</button>
     </div>
+
     <script type="module">
         import { db, auth } from './app.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { collection, getDocs, updateDoc, doc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        
-        let targetId = "";
-        const snap = await getDocs(collection(db, "burdens"));
-        const others = snap.docs.filter(d => d.data().author !== auth.currentUser?.uid);
-        
-        if(others.length > 0) {
-            const random = others[Math.floor(Math.random() * others.length)];
-            targetId = random.id;
-            document.getElementById('burdenDisplay').innerText = `"${random.data().text}"`;
-        } else { window.location.href = 'dashboard.html'; }
+
+        let targetId = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) window.location.href = 'index.html';
+            const snap = await getDocs(collection(db, "burdens"));
+            const others = snap.docs.filter(d => d.data().author !== user.uid);
+            if (others.length > 0) {
+                const random = others[Math.floor(Math.random() * others.length)];
+                targetId = random.id;
+                document.getElementById('burdenDisplay').innerText = `"${random.data().text}"`;
+            } else { window.location.href = 'dashboard.html'; }
+        });
 
         document.getElementById('unlockBtn').onclick = async () => {
             const val = document.getElementById('reply').value;
-            if(val.length < 10) return alert("Write more...");
+            if(val.length < 10) return alert("Write a sincere reply.");
             await updateDoc(doc(db, "burdens", targetId), { strengths: arrayUnion(val) });
             window.location.href = 'dashboard.html';
         };
