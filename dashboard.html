@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-slate-950 text-white">
+    <nav class="p-4 border-b border-slate-800 flex justify-between bg-slate-900">
+        <h1 class="text-emerald-500 font-bold">BROTHERHOOD</h1>
+        <button id="postBtn" class="bg-emerald-600 px-4 py-1 rounded-lg text-sm font-bold">+ Post</button>
+    </nav>
+    <div id="feed" class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+    <script type="module">
+        import { db, auth } from './app.js';
+        import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        onSnapshot(query(collection(db, "burdens"), orderBy("timestamp", "desc")), (snap) => {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = '';
+            snap.forEach(doc => {
+                const data = doc.data();
+                feed.innerHTML += `<div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                    <p class="italic mb-2 text-slate-200">"${data.text}"</p>
+                    <div class="text-[10px] text-emerald-500 uppercase">Brother #${data.author.slice(-4)}</div>
+                    <div class="mt-2 space-y-1">${data.strengths.map(s => `<div class="text-[11px] text-slate-400">🛡️ ${s}</div>`).join('')}</div>
+                </div>`;
+            });
+        });
+
+        document.getElementById('postBtn').onclick = async () => {
+            const msg = prompt("Share your burden:");
+            if(msg) await addDoc(collection(db, "burdens"), {
+                text: msg, author: auth.currentUser.uid, strengths: [], timestamp: serverTimestamp()
+            });
+        };
+    </script>
+</body>
+</html>
