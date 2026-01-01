@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Zen Zone | Brotherhood</title>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; overflow: hidden; touch-action: manipulation; }
+        .hidden { display: none !important; }
+        .glass-card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .thought-float { animation: floatUp 4s forwards linear; position: fixed; pointer-events: none; }
+        @keyframes floatUp { to { transform: translateY(-100vh) scale(0.5); opacity: 0; } }
+        #starCanvas { position: fixed; top: 0; left: 0; z-index: 0; pointer-events: none; }
+    </style>
+</head>
+<body class="text-slate-200 min-h-screen flex flex-col">
+
+    <nav class="p-4 flex justify-between border-b border-white/5 bg-slate-900/50 z-50">
+        <button onclick="window.location.href='dashboard.html'" class="text-emerald-500 font-bold">← Back</button>
+        <h1 class="text-lg font-black uppercase">Zen Zone</h1>
+        <div class="w-16"></div>
+    </nav>
+
+    <div id="menuView" class="max-w-6xl mx-auto p-6 grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto">
+        <div onclick="showInstructions('breath')" class="glass-card p-6 rounded-3xl text-center cursor-pointer hover:border-emerald-500/50">🌬️<br><span class="text-[10px] font-bold uppercase mt-2 block">Breath</span></div>
+        <div onclick="showInstructions('thought')" class="glass-card p-6 rounded-3xl text-center cursor-pointer hover:border-emerald-500/50">☁️<br><span class="text-[10px] font-bold uppercase mt-2 block">Release</span></div>
+        <div onclick="showInstructions('bubble')" class="glass-card p-6 rounded-3xl text-center cursor-pointer hover:border-emerald-500/50">🫧<br><span class="text-[10px] font-bold uppercase mt-2 block">Pop</span></div>
+        <div onclick="showInstructions('grounding')" class="glass-card p-6 rounded-3xl text-center cursor-pointer hover:border-emerald-500/50">🧘<br><span class="text-[10px] font-bold uppercase mt-2 block">Ground</span></div>
+        <div onclick="showInstructions('rhythm')" class="glass-card p-6 rounded-3xl text-center cursor-pointer hover:border-emerald-500/50">🎵<br><span class="text-[10px] font-bold uppercase mt-2 block">Rhythm</span></div>
+        <div onclick="showInstructions('squeeze')" class="glass-card p-6 rounded-3xl text-center cursor-pointer hover:border-emerald-500/50">✊<br><span class="text-[10px] font-bold uppercase mt-2 block">Squeeze</span></div>
+        <div onclick="showInstructions('stars')" class="glass-card p-6 rounded-3xl text-center cursor-pointer hover:border-emerald-500/50">✨<br><span class="text-[10px] font-bold uppercase mt-2 block">Stars</span></div>
+        <div onclick="showInstructions('noise')" class="glass-card p-6 rounded-3xl text-center cursor-pointer hover:border-emerald-500/50">🌊<br><span class="text-[10px] font-bold uppercase mt-2 block">Noise</span></div>
+        <div onclick="showInstructions('maze')" class="glass-card p-6 rounded-3xl text-center cursor-pointer hover:border-emerald-500/50">🧩<br><span class="text-[10px] font-bold uppercase mt-2 block">Maze</span></div>
+    </div>
+
+    <div id="instructionsView" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-950/90">
+        <div class="glass-card max-w-sm w-full p-8 rounded-[2rem] text-center">
+            <h2 id="instrTitle" class="text-xl font-black text-white mb-2 uppercase"></h2>
+            <p id="instrText" class="text-slate-400 text-sm mb-6"></p>
+            <button id="startGameBtn" class="w-full bg-emerald-500 text-slate-900 py-3 rounded-xl font-bold">Start</button>
+        </div>
+    </div>
+
+    <div id="gameViewport" class="hidden flex-1 flex flex-col items-center justify-center relative z-10">
+        
+        <div id="game_breath" class="hidden">
+            <div id="circle" class="w-32 h-32 bg-emerald-500/20 border-2 border-emerald-500 rounded-full flex items-center justify-center transition-all duration-[4000ms]">
+                <span id="breathTxt" class="text-emerald-500 font-bold uppercase text-xs">Inhale</span>
+            </div>
+        </div>
+
+        <div id="game_thought" class="hidden w-full max-w-xs">
+            <input type="text" id="tInput" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl text-center" placeholder="Type a worry & Enter">
+        </div>
+
+        <div id="game_bubble" class="hidden fixed inset-0"></div>
+
+        <div id="game_grounding" class="hidden text-center">
+            <p id="gPrompt" class="text-lg font-bold mb-4 italic">5 things you see...</p>
+            <button onclick="groundNext()" class="bg-emerald-500 px-6 py-2 rounded-full text-slate-900 font-bold uppercase text-xs">Next Step</button>
+        </div>
+
+        <div id="game_rhythm" class="hidden grid grid-cols-2 gap-4">
+            <button onclick="beep(261)" class="w-20 h-20 bg-slate-800 rounded-xl">C</button>
+            <button onclick="beep(293)" class="w-20 h-20 bg-slate-800 rounded-xl">D</button>
+            <button onclick="beep(329)" class="w-20 h-20 bg-slate-800 rounded-xl">E</button>
+            <button onclick="beep(349)" class="w-20 h-20 bg-slate-800 rounded-xl">F</button>
+        </div>
+
+        <div id="game_squeeze" class="hidden">
+            <div id="ball" onmousedown="sqz(1)" onmouseup="sqz(0)" class="w-32 h-32 bg-rose-500 rounded-full flex items-center justify-center font-bold text-xs select-none">HOLD</div>
+        </div>
+
+        <canvas id="starCanvas" class="hidden"></canvas>
+
+        <div id="game_noise" class="hidden space-y-4">
+            <button onclick="playNoise(100)" class="w-40 py-3 bg-slate-800 rounded-xl">Ocean Hum</button>
+            <button onclick="playNoise(0)" class="w-40 py-3 bg-rose-900/20 rounded-xl">Stop All</button>
+        </div>
+
+        <div id="game_maze" class="hidden">
+            <div id="maze" class="w-64 h-64 bg-slate-900 border-2 border-slate-800 relative">
+                <div id="plr" class="w-4 h-4 bg-emerald-500 absolute top-0 left-0"></div>
+                <div class="w-4 h-4 bg-rose-500 absolute bottom-0 right-0"></div>
+            </div>
+            <p class="mt-4 text-[10px] text-slate-500">Tap screen or use Arrows to move</p>
+        </div>
+
+        <button onclick="location.reload()" class="fixed bottom-6 bg-slate-800 px-6 py-2 rounded-full text-[10px] uppercase font-bold tracking-widest border border-white/10">Exit Game</button>
+    </div>
+
+    <script>
+        const ctx = {
+            breath: { t: "Breath Sync", d: "Regulate your heart rate.", start: startBreath },
+            thought: { t: "Thought Release", d: "Let your worries float away.", start: startThought },
+            bubble: { t: "Bubble Pop", d: "Focus on the popping sound.", start: startBubbles },
+            grounding: { t: "Grounding", d: "Reconnect with your senses.", start: () => showGame('game_grounding') },
+            rhythm: { t: "Rhythm", d: "Create a calming melody.", start: () => showGame('game_rhythm') },
+            squeeze: { t: "Squeeze", d: "Build tension, then let go.", start: () => showGame('game_squeeze') },
+            stars: { t: "Star Dust", d: "Draw with stardust.", start: startStars },
+            noise: { t: "Soundscape", d: "Generate white noise.", start: () => showGame('game_noise') },
+            maze: { t: "Focus Maze", d: "Navigate with steady hands.", start: startMaze }
+        };
+
+        function showInstructions(k) {
+            document.getElementById('menuView').classList.add('hidden');
+            document.getElementById('instructionsView').classList.remove('hidden');
+            document.getElementById('instrTitle').innerText = ctx[k].t;
+            document.getElementById('instrText').innerText = ctx[k].d;
+            document.getElementById('startGameBtn').onclick = ctx[k].start;
+        }
+
+        function showGame(id) {
+            document.getElementById('instructionsView').classList.add('hidden');
+            document.getElementById('gameViewport').classList.remove('hidden');
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        // 1. Breath
+        function startBreath() {
+            showGame('game_breath');
+            const c = document.getElementById('circle');
+            const t = document.getElementById('breathTxt');
+            setInterval(() => {
+                const isGrow = t.innerText === "Inhale";
+                c.style.transform = isGrow ? "scale(2)" : "scale(1)";
+                t.innerText = isGrow ? "Exhale" : "Inhale";
+            }, 4000);
+        }
+
+        // 2. Thought
+        function startThought() {
+            showGame('game_thought');
+            document.getElementById('tInput').onkeypress = (e) => {
+                if(e.key === 'Enter') {
+                    const div = document.createElement('div');
+                    div.innerText = e.target.value;
+                    div.className = "thought-float text-slate-500 font-bold";
+                    div.style.left = "50%"; div.style.top = "50%";
+                    document.body.appendChild(div);
+                    e.target.value = '';
+                    setTimeout(() => div.remove(), 4000);
+                }
+            };
+        }
+
+        // 3. Bubbles
+        function startBubbles() {
+            showGame('game_bubble');
+            const area = document.getElementById('game_bubble');
+            for(let i=0; i<20; i++) {
+                const b = document.createElement('div');
+                b.className = "absolute w-12 h-12 border border-emerald-500/30 rounded-full";
+                b.style.left = Math.random()*90+'%'; b.style.top = Math.random()*80+'%';
+                b.onclick = () => b.remove();
+                area.appendChild(b);
+            }
+        }
+
+        // 4. Grounding
+        let gIdx = 0;
+        const gPrompts = ["5 Sights", "4 Feelings", "3 Sounds", "2 Smells", "1 Taste"];
+        function groundNext() {
+            gIdx = (gIdx + 1) % 5;
+            document.getElementById('gPrompt').innerText = gPrompts[gIdx] + "...";
+        }
+
+        // 5. Rhythm & 8. Noise
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        function beep(f) {
+            const o = audio.createOscillator(); const g = audio.createGain();
+            o.connect(g); g.connect(audio.destination);
+            o.frequency.value = f; g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 1);
+            o.start(); o.stop(audio.currentTime + 1);
+        }
+        let activeNoise = null;
+        function playNoise(f) {
+            if(activeNoise) { activeNoise.stop(); activeNoise = null; }
+            if(f === 0) return;
+            activeNoise = audio.createOscillator();
+            activeNoise.frequency.value = f; activeNoise.connect(audio.destination);
+            activeNoise.start();
+        }
+
+        // 6. Squeeze
+        let sInt;
+        function sqz(on) {
+            const b = document.getElementById('ball');
+            if(on) sInt = setInterval(() => {
+                const s = parseFloat(b.style.width || 128) + 1;
+                b.style.width = s+'px'; b.style.height = s+'px';
+            }, 20);
+            else { clearInterval(sInt); b.style.width = '128px'; b.style.height = '128px'; b.style.backgroundColor = '#10b981'; setTimeout(() => b.style.backgroundColor='#f43f5e', 200); }
+        }
+
+        // 7. Stars
+        function startStars() {
+            showGame('game_stars');
+            const canvas = document.getElementById('starCanvas');
+            canvas.classList.remove('hidden');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const c = canvas.getContext('2d');
+            window.onmousemove = (e) => {
+                c.fillStyle = '#10b981'; c.beginPath(); c.arc(e.clientX, e.clientY, 3, 0, 7); c.fill();
+            };
+            function f() { c.fillStyle = 'rgba(2,6,23,0.1)'; c.fillRect(0,0,canvas.width,canvas.height); requestAnimationFrame(f); }
+            f();
+        }
+
+        // 9. Maze
+        function startMaze() {
+            showGame('game_maze');
+            let px=0, py=0;
+            const plr = document.getElementById('plr');
+            window.onkeydown = (e) => {
+                if(e.key.includes('Right')) px = Math.min(px+20, 240);
+                if(e.key.includes('Left')) px = Math.max(px-20, 0);
+                if(e.key.includes('Down')) py = Math.min(py+20, 240);
+                if(e.key.includes('Up')) py = Math.max(py-20, 0);
+                plr.style.left = px+'px'; plr.style.top = py+'px';
+            };
+            window.onclick = () => { px += 20; if(px>240) {px=0; py+=20;} plr.style.left = px+'px'; plr.style.top = py+'px'; };
+        }
+    </script>
+</body>
+</html>
