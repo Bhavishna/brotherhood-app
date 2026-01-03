@@ -1,27 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>Brotherhood | Entrance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Support Gate | Brotherhood</title>
+    <style>
+        /* --- DYNAMIC THEME ENGINE --- */
+        :root {
+            --bg-main: #020617;
+            --text-main: #e2e8f0;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(255, 255, 255, 0.05);
+        }
+
+        body.light-theme {
+            --bg-main: #f8fafc;
+            --text-main: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-border: rgba(15, 23, 42, 0.1);
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg-main); 
+            color: var(--text-main);
+            transition: background 0.5s ease;
+        }
+
+        .glass-card { background: var(--card-bg); border: 1px solid var(--card-border); backdrop-filter: blur(12px); }
+    </style>
 </head>
-<body class="bg-[#020617] text-white flex flex-col items-center justify-center min-h-screen">
-    <div class="text-center">
-        <h1 class="text-7xl font-black text-emerald-500 tracking-tighter mb-4">BROTHERHOOD</h1>
-        <p class="text-slate-400 text-lg mb-10">A sanctuary for students. Strength in silence.</p>
-        <button id="loginBtn" class="bg-emerald-600 hover:bg-emerald-500 px-12 py-4 rounded-full font-bold text-xl transition-all transform hover:scale-105">
-            Enter with Google
+<body class="p-6 flex items-center justify-center min-h-screen">
+
+    <div class="max-w-md w-full glass-card p-10 rounded-[2.5rem] shadow-2xl transition-all">
+        <h2 class="text-emerald-500 font-black uppercase tracking-widest text-[10px] mb-4">Gate Requirement: Give Strength</h2>
+        
+        <div id="burdenDisplay" class="bg-slate-800/30 p-6 rounded-2xl italic text-slate-400 text-lg mb-8 border-l-4 border-emerald-500">
+            "Loading a brother's burden..."
+        </div>
+
+        <textarea id="reply" rows="3" class="w-full bg-slate-900/50 border border-white/10 rounded-2xl p-4 mb-6 outline-none focus:border-emerald-500 text-white placeholder:text-slate-600 transition-all resize-none" placeholder="Type a word of strength (Min 10 chars)..."></textarea>
+        
+        <button id="unlockBtn" class="w-full bg-emerald-600 py-4 rounded-2xl font-black uppercase tracking-widest text-slate-900 hover:bg-emerald-500 transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
+            Unlock Dashboard
         </button>
+        
+        <p class="text-center text-[9px] text-slate-500 mt-6 uppercase font-bold tracking-widest">Your verified identity is used to award +10 XP</p>
     </div>
 
     <script type="module">
-        import { auth, provider } from './app.js';
-        import { signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { db, auth } from './app.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { collection, getDocs, updateDoc, doc, arrayUnion, setDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        document.getElementById('loginBtn').onclick = async () => {
-            try { await signInWithPopup(auth, provider); } catch (err) { console.error(err); }
+        let targetId = null;
+
+        // Apply Theme on Load
+        const savedTheme = localStorage.getItem('user-theme') || 'dark';
+        if (savedTheme === 'light') document.body.classList.add('light-theme');
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const snap = await getDocs(collection(db, "burdens"));
+                const others = snap.docs.filter(d => d.data().author !== user.uid);
+                
+                if (others.length > 0) {
+                    const random = others[Math.floor(Math.random() * others.length)];
+                    targetId = random.id;
+                    document.getElementById('burdenDisplay').innerText = `"${random.data().text}"`;
+                } else { 
+                    // If no other burdens exist, let them through
+                    window.location.href = 'dashboard.html'; 
+                }
+            } catch (err) {
+                console.error("Error fetching burdens:", err);
+            }
+        });
+
+        document.getElementById('unlockBtn').onclick = async () => {
+            const val = document.getElementById('reply').value.trim();
+            if(val.length < 10) {
+                alert("Please provide a sincere message of at least 10 characters.");
+                return;
+            }
+
+            const btn = document.getElementById('unlockBtn');
+            btn.disabled = true;
+            btn.innerText = "VERIFYING...";
+            
+            try {
+                // 1. Send Strength to the other brother
+                await updateDoc(doc(db, "burdens", targetId), { 
+                    strengths: arrayUnion(val) 
+                });
+                
+                // 2. Award 10 Empathy Points to the user
+                await setDoc(doc(db, "users", auth.currentUser.uid), { 
+                    points: increment(10),
+                    lastActive: serverTimestamp() 
+                }, { merge: true });
+
+                window.location.href = 'dashboard.html';
+            } catch (err) {
+                console.error("Gate error:", err);
+                btn.disabled = false;
+                btn.innerText = "UNLOCK DASHBOARD";
+            }
         };
-
-        onAuthStateChanged(auth, (user) => { if(user) window.location.href = 'gate.html'; });
     </script>
 </body>
 </html>
